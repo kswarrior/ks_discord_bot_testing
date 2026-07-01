@@ -1,7 +1,7 @@
-name: Download from HF Bucket and Run Bot Testing
+name: Download from HF Bucket and Run Bot testing
 
 on:
-  workflow_dispatch: # Allows manual triggering from the Actions tab
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -15,9 +15,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22' # Using Node 22 LTS
+          node-version: '22'
 
-      # Step 2: Set up Python (required to install the Hugging Face CLI via pip)
+      # Step 2: Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -28,13 +28,14 @@ jobs:
         run: |
           pip install -U "huggingface_hub"
 
-      # Step 4: Sync the discord-bot directory from your Public Bucket
-      # Since it is completely public, no authentication token is required to read it.
+      # Step 4: Optimized Sync
+      # -v shows exactly what file is downloading in real-time
+      # --exclude ignores any pre-existing node_modules folder to save massive amounts of time
       - name: Download discord-bot from HF Bucket
         run: |
-          hf buckets sync hf://buckets/kswarrior/opencode-storage/discord-bot ./discord-bot
+          hf buckets sync -v --exclude "node_modules/**" hf://buckets/kswarrior/opencode-storage/discord-bot ./discord-bot
 
-      # Step 5: Navigate into the downloaded folder, install dependencies, and start
+      # Step 5: Install fresh dependencies and start
       - name: Install and Start Discord Bot
         run: |
           cd discord-bot
