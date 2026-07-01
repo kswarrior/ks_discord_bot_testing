@@ -1,0 +1,30 @@
+name: Download and Discord Bot Testing
+
+on:
+  workflow_dispatch: # Allows you to trigger this manually from the Actions tab
+  push:
+    branches:
+      - main
+
+jobs:
+  start-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Set up Node.js environment
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22' # Using Node 22 LTS
+
+      # Step 2: Clone the public Hugging Face repository
+      - name: Clone Hugging Face Repo
+        run: |
+          git clone --depth 1 https://huggingface.co/kswarrior/opencode-storage
+
+      # Step 3: Navigate to the folder, install dependencies, and start
+      - name: Install and Start Discord Bot
+        run: |
+          cd opencode-storage/discord-bot
+          npm install
+          node .
