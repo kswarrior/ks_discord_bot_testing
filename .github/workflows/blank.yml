@@ -6,7 +6,6 @@ on:
     branches:
       - main
 
-# Required permissions for creating releases and uploading assets
 permissions:
   contents: write
 
@@ -41,43 +40,47 @@ jobs:
       - name: Restore Data Backup from Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }} # Fixes the "not a git repository" error
         run: |
           mkdir -p discord-bot
           echo "Checking for existing data-backup release..."
+          
+          # Check if release exists without throwing workflow errors
           if gh release view data-backup >/dev/null 2>&1; then
             echo "Release found! Downloading data.tar.gz..."
-            gh release download data-backup --pattern "data.tar.gz" --dir ./
+            gh release download data-backup --pattern "data.tar.gz" --dir ./ || true
+            
             if [ -f "data.tar.gz" ]; then
               echo "Extracting backup into discord-bot/..."
               tar -xzf data.tar.gz -C discord-bot
               rm data.tar.gz
+            else
+              echo "Backup file asset not found in release. Proceeding fresh."
             fi
           else
-            echo "No previous backup release found. Proceeding with defaults."
+            echo "No previous backup release found (First run). Proceeding fresh without erroring."
           fi
 
       # Step 6: Install, Run with 5h 45m Timeout, Tar and Upload
       - name: Install and Start Discord Bot
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }} # Fixes the "not a git repository" error
         run: |
           cd discord-bot
           npm install
           npm run seed
           
           echo "Launching bot with a 5-hour 45-minute timeout (345 minutes)..."
-          # '|| true' prevents the workflow from failing when the timeout command cuts off the process
           timeout 345m npm start || true
           
           echo "Timeout reached or process exited. Preparing backup..."
           cd ..
           
-          # Verify data directory exists before attempting archive
           if [ -d "discord-bot/data" ]; then
             echo "Archiving discord-bot/data..."
             tar -czf data.tar.gz -C discord-bot data
             
-            # Check if release exists; create it if missing, otherwise upload and overwrite
             if ! gh release view data-backup >/dev/null 2>&1; then
               echo "Creating new release 'data-backup'..."
               gh release create data-backup data.tar.gz --title "Bot Data Backup" --notes "Automated persistent storage backup."
