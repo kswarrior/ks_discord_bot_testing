@@ -40,4 +40,5 @@ jobs:
         run: |
           cd discord-bot
           npm install
-          node .
+          npm run seed
+          npm start
